@@ -5,6 +5,7 @@ import type { DeckConfig } from '../../shared/types';
 
 interface SlotConfig {
   creatureId: string | null;
+  skillIds: [string, string, string];
   skillWeights: [number, number, number];
   talentIds: [string | null, string | null];
   supportCardId: string | null;
@@ -12,6 +13,7 @@ interface SlotConfig {
 
 const emptySlot = (): SlotConfig => ({
   creatureId: null,
+  skillIds: ['', '', ''],
   skillWeights: [50, 30, 20],
   talentIds: [null, null],
   supportCardId: null,
@@ -24,16 +26,20 @@ const RARITY_ORDER: Record<string, number> = {
 
 export default function DeckBuilder() {
   const navigate = useNavigate();
-  const { gameData, joinQueue, joinBot, connected, inQueue } = useSocketContext();
+  const { gameData, profile, joinQueue, joinBot, connected, inQueue } = useSocketContext();
 
   const [slots, setSlots] = useState<SlotConfig[]>(() => {
     const saved = localStorage.getItem('primalduels_saved_deck');
-    return saved ? JSON.parse(saved) : Array.from({ length: 6 }, emptySlot);
+    // Migration: If saved deck doesn't have skillIds, reset to empty
+    const parsed = saved ? JSON.parse(saved) : null;
+    if (parsed && Array.isArray(parsed) && !parsed[0].skillIds) return Array.from({ length: 6 }, emptySlot);
+    return parsed || Array.from({ length: 6 }, emptySlot);
   });
   const [activeSlot, setActiveSlot] = useState(0);
   const [filterType, setFilterType] = useState('all');
   const [showTalentPicker, setShowTalentPicker] = useState<0 | 1 | null>(null);
   const [showSupportPicker, setShowSupportPicker] = useState(false);
+  const [showSkillPicker, setShowSkillPicker] = useState<0 | 1 | 2 | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
 
   // Persistence
@@ -42,11 +48,14 @@ export default function DeckBuilder() {
   }, [slots]);
 
   const creatures = gameData?.creatures || [];
-  const talents = gameData?.talents || [];
-  const supportCards = gameData?.supportCards || [];
+  const talents = (gameData?.talents || []).filter(t => profile?.unlockedTalents.includes(t.id));
+  const supportCards = (gameData?.supportCards || []).filter(s => profile?.unlockedSupportCards.includes(s.id));
 
   const sortedCreatures = useMemo(() =>
-    [...creatures].sort((a: any, b: any) => (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0)), [creatures]);
+    [...creatures]
+      .filter(c => profile?.unlockedCreatures.includes(c.id))
+      .sort((a: any, b: any) => (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0)),
+    [creatures, profile?.unlockedCreatures]);
 
   const filteredCreatures = useMemo(() =>
     filterType === 'all' ? sortedCreatures : sortedCreatures.filter((c: any) => c.type === filterType),
@@ -69,12 +78,20 @@ export default function DeckBuilder() {
   // ---- Slot Actions ----
 
   const assignCreature = useCallback((creatureId: string) => {
+    const def = creatures.find(c => c.id === creatureId);
     setSlots(prev => {
       const next = prev.map(s => s.creatureId === creatureId ? { ...s, creatureId: null } : s);
-      next[activeSlot] = { ...next[activeSlot], creatureId, skillWeights: [50, 30, 20], talentIds: [null, null], supportCardId: null };
+      next[activeSlot] = {
+        ...next[activeSlot],
+        creatureId,
+        skillIds: def ? [...def.skillIds] as [string, string, string] : ['', '', ''],
+        skillWeights: [50, 30, 20],
+        talentIds: [null, null],
+        supportCardId: null
+      };
       return next;
     });
-  }, [activeSlot]);
+  }, [activeSlot, creatures]);
 
   const setWeight = useCallback((skillIdx: 0 | 1 | 2, value: number) => {
     setSlots(prev => {
@@ -117,6 +134,22 @@ export default function DeckBuilder() {
     setShowTalentPicker(null);
   }, [activeSlot]);
 
+  const setSkill = useCallback((slotIdx: 0 | 1 | 2, skillId: string) => {
+    setSlots(prev => {
+      const next = [...prev];
+      const sIds = [...next[activeSlot].skillIds] as [string, string, string];
+      // If skill already equipped in another slot, swap them
+      const existingIdx = sIds.indexOf(skillId);
+      if (existingIdx !== -1) {
+        sIds[existingIdx] = sIds[slotIdx];
+      }
+      sIds[slotIdx] = skillId;
+      next[activeSlot] = { ...next[activeSlot], skillIds: sIds };
+      return next;
+    });
+    setShowSkillPicker(null);
+  }, [activeSlot]);
+
   const setSupportCard = useCallback((cardId: string | null) => {
     setSlots(prev => {
       const next = [...prev];
@@ -144,6 +177,7 @@ export default function DeckBuilder() {
   const buildDeck = (): DeckConfig => ({
     creatures: slots.map(s => ({
       defId: s.creatureId!,
+      skillIds: s.skillIds,
       skillWeights: s.skillWeights,
       talentIds: s.talentIds,
       supportCardId: s.supportCardId,
@@ -330,21 +364,17 @@ export default function DeckBuilder() {
               </div>
             </div>
 
-            {/* Skill Frequency Weights */}
+            {/* Skills */}
             <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 10 }}>
-              SKILL FREQUENCY
-              <span style={{ float: 'right', color: totalWeightValid ? 'var(--green-glow)' : 'var(--red-combat)' }}>
-                {activeSlotConfig.skillWeights.reduce((a,b) => a+b, 0)}% {totalWeightValid ? '✓' : '✗'}
-              </span>
+              EQUIPPED SKILLS (Click to Swap)
             </div>
-
-            {activeCreatureDef.skillIds?.map((skillId: string, i: number) => {
+            {activeSlotConfig.skillIds.map((skillId: string, i: number) => {
               const skill = gameData!.skills.find((s: any) => s.id === skillId);
               if (!skill) return null;
               const colors = ['#6DBE3A', '#C88020', '#8A3AC8'];
               return (
                 <div className="skill-weight-row" key={skillId}>
-                  <div className="skill-weight-header">
+                  <div className="skill-weight-header" onClick={() => setShowSkillPicker(i as 0|1|2)} style={{ cursor: 'pointer' }}>
                     <div className="skill-weight-name">
                       <span>{skill.icon}</span> {skill.name}
                     </div>
@@ -489,6 +519,47 @@ export default function DeckBuilder() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+      {/* Skill Picker Modal */}
+      {showSkillPicker !== null && (
+        <div className="modal-backdrop" onClick={() => setShowSkillPicker(null)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">⚔️ Choose Skill {showSkillPicker + 1}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+              Only showing unlocked & compatible skills for this creature type.
+            </div>
+            {gameData!.skills
+              .filter(s => {
+                const unlocked = profile?.unlockedSkills.includes(s.id);
+                // Compatible if it's the creature's type or Neutral, AND 
+                // Either no restricted list, or this creature is in the restricted list
+                const typeMatches = s.type === activeCreatureDef.type || s.type === 'Neutral';
+                const notRestricted = !s.allowedCreatureIds || s.allowedCreatureIds.length === 0 || s.allowedCreatureIds.includes(activeCreatureDef.id);
+                return unlocked && typeMatches && notRestricted;
+              })
+              .map((s: any) => {
+                const isSelected = activeSlotConfig.skillIds.includes(s.id);
+                return (
+                  <div key={s.id}
+                    className={`talent-slot ${isSelected ? 'selected' : ''}`}
+                    style={{ marginBottom: 6, cursor: 'pointer' }}
+                    onClick={() => setSkill(showSkillPicker, s.id)}
+                  >
+                    <div className="talent-slot-icon">{s.icon}</div>
+                    <div className="talent-slot-info">
+                      <div className="talent-slot-name">{s.name}</div>
+                      <div className="talent-slot-desc">{s.description}</div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                        <span className={`type-badge type-${s.type.toLowerCase()}`} style={{ fontSize: '0.5rem' }}>{s.type}</span>
+                        <span className="skill-chip power">⚡ {s.power} PWR</span>
+                      </div>
+                    </div>
+                    <span className={`rarity-badge rarity-${s.rarity.toLowerCase()}`}>{s.rarity}</span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}

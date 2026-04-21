@@ -9,6 +9,57 @@ const BG_CLASS: Record<string, string> = {
   Jungle: 'bg-jungle', Abyss: 'bg-abyss', Heaven: 'bg-heaven',
 };
 
+interface TacticalHUDProps {
+  creature: BattleCreature | null;
+  gameData: any;
+  side: 'player' | 'enemy';
+}
+
+function TacticalHUD({ creature, gameData, side }: TacticalHUDProps) {
+  if (!creature || !gameData) return null;
+
+  const support = gameData.supportCards.find((s: any) => s.id === creature.supportCardId);
+  const talents = creature.talents.map(tid => gameData.talents.find((t: any) => t.id === tid)).filter(Boolean);
+
+  return (
+    <div className="tactical-hud" style={{
+      position: 'absolute',
+      bottom: side === 'player' ? 20 : 'auto',
+      top: side === 'enemy' ? 20 : 'auto',
+      left: side === 'player' ? 'auto' : 20,
+      right: side === 'player' ? 20 : 'auto',
+      zIndex: 20
+    }}>
+      <div className="loadout-label">Skills</div>
+      <div className="loadout-grid">
+        {creature.skills.map((s, idx) => (
+          <div key={idx} className="loadout-item" title={s.name}>
+            {s.icon}
+          </div>
+        ))}
+      </div>
+
+      {(talents.length > 0 || support) && (
+        <>
+          <div className="loadout-label" style={{ marginTop: 8 }}>Augments</div>
+          <div className="loadout-grid">
+            {talents.map((t, idx) => (
+              <div key={idx} className="loadout-item talent" title={t.name}>
+                {t.icon}
+              </div>
+            ))}
+            {support && (
+              <div className="loadout-item support" title={support.name}>
+                {support.icon}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Skill popup state
 interface SkillPopup {
   id: string;
@@ -165,8 +216,21 @@ export default function BattleArena() {
 
   return (
     <div className="arena-container">
-      {/* Dynamic Background */}
-      <div className={`arena-bg ${bgClass}`} />
+      {/* Battle Environment System */}
+      <div className="arena-background-system">
+        {/* Enemy Side Background (Right) */}
+        <div className="arena-bg-side arena-bg-enemy" 
+          style={{ backgroundImage: `url(/assets/backgrounds/${BG_CLASS[enemyCreature?.backgroundType || 'Jungle']}_1.png)` }} 
+        />
+        
+        {/* Player Side Background (Left with Lightning Bolt Clip) */}
+        <div className="arena-bg-side arena-bg-player" 
+          style={{ backgroundImage: `url(/assets/backgrounds/${BG_CLASS[myCreature?.backgroundType || 'Jungle']}_1.png)` }} 
+        />
+
+        {/* The Lightning Divider Line */}
+        <div className="lightning-divider" />
+      </div>
 
       {/* Grid overlay for depth */}
       <div style={{
@@ -244,6 +308,9 @@ export default function BattleArena() {
               </div>
             ))}
           </div>
+
+          {/* Tactical HUD for Enemy */}
+          <TacticalHUD creature={enemyCreature} gameData={gameData} side="enemy" />
         </div>
 
         {/* VS Divider + Skill Popup */}
@@ -282,6 +349,9 @@ export default function BattleArena() {
               </div>
             ))}
           </div>
+
+          {/* Tactical HUD for Player */}
+          <TacticalHUD creature={myCreature} gameData={gameData} side="player" />
         </div>
       </div>
 

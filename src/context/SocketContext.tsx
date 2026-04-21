@@ -2,7 +2,12 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { io, Socket } from 'socket.io-client';
 import type { GameState, PlayerProfile, CombatEvent, DeckConfig } from '../../shared/types';
 
-const SERVER_URL = 'http://localhost:3001';
+const isLocalhost = Boolean(
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '[::1]' ||
+  window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+);
+const SERVER_URL = isLocalhost ? `http://${window.location.hostname}:3001` : 'http://localhost:3001';
 
 interface GameData {
   creatures: any[];
@@ -29,6 +34,7 @@ interface SocketContextType {
   joinBot: (deck: DeckConfig) => void;
   leaveQueue: () => void;
   setPlayerName: (name: string) => void;
+  setProfile: React.Dispatch<React.SetStateAction<PlayerProfile | null>>;
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -69,18 +75,24 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const socket = io(SERVER_URL, {
-      transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
+      autoConnect: true,
     });
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
       setConnected(true);
-      console.log('[Socket] Connected');
-      socket.emit('get_profile', { playerId, playerName }, (data: PlayerProfile) => setProfile(data));
-      socket.emit('get_game_data', {}, (data: GameData) => setGameData(data));
+      console.log('[Socket] Connected. Requesting profile for:', playerId);
+      socket.emit('get_profile', { playerId, playerName }, (data: PlayerProfile) => {
+        console.log('[Socket] Profile loaded:', data);
+        setProfile(data);
+      });
+      socket.emit('get_game_data', {}, (data: GameData) => {
+        console.log('[Socket] GameData loaded');
+        setGameData(data);
+      });
     });
 
     socket.on('disconnect', () => {
@@ -131,6 +143,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       console.error('[Socket Error]', data.message);
     });
 
+    socket.on('connect_error', (err) => {
+      console.error('[Socket Connect Error]', err.message);
+    });
+
     return () => { socket.disconnect(); };
   }, [playerId, playerName]);
 
@@ -170,6 +186,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     joinBot,
     leaveQueue,
     setPlayerName,
+    setProfile,
   };
 
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;

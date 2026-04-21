@@ -45,6 +45,7 @@ export interface SkillDef {
   description: string;
   icon: string;
   rarity: Rarity;
+  allowedCreatureIds?: string[];
 }
 
 // ---- Talent Definitions ----
@@ -207,8 +208,9 @@ export interface DeckConfig {
 
 export interface DeckCreature {
   defId: string;
-  skillWeights: [number, number, number]; // must sum to 100
-  talentIds: [string | null, string | null]; // max 2 talents
+  skillIds: [string, string, string];
+  skillWeights: [number, number, number];
+  talentIds: [string | null, string | null];
   supportCardId: string | null;
 }
 

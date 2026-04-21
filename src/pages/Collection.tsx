@@ -8,21 +8,29 @@ const RARITY_ORDER: Record<string, number> = {
 
 export default function Collection() {
   const { gameData, profile } = useSocketContext();
-  const [tab, setTab] = useState<'creatures' | 'support' | 'talents'>('creatures');
+  const [tab, setTab] = useState<'creatures' | 'skills' | 'support' | 'talents'>('creatures');
   const [filterType, setFilterType] = useState('all');
   const [selected, setSelected] = useState<any>(null);
 
   const creatures = (gameData?.creatures || []).sort((a: any, b: any) =>
     (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0));
+  const skills = (gameData?.skills || []).sort((a: any, b: any) =>
+    (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0));
   const supportCards = gameData?.supportCards || [];
   const talents = gameData?.talents || [];
   const unlockedCreatures = profile?.unlockedCreatures || [];
+  const unlockedSkills = profile?.unlockedSkills || [];
+  const unlockedSupport = profile?.unlockedSupportCards || [];
+  const unlockedTalents = profile?.unlockedTalents || [];
 
   const filteredCreatures = filterType === 'all' ? creatures
     : creatures.filter((c: any) => c.type === filterType);
+    
+  const filteredSkills = filterType === 'all' ? skills
+    : skills.filter((s: any) => s.type === filterType);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-void)', paddingBottom: 80 }}>
+    <div className="page-container">
       {/* Header */}
       <div style={{
         background: 'linear-gradient(180deg, rgba(20, 24, 16, 0.9) 0%, transparent 100%)',
@@ -41,18 +49,61 @@ export default function Collection() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '0 20px 20px' }}>
-        {(['creatures', 'support', 'talents'] as const).map(t => (
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '0 20px 20px', flexWrap: 'wrap' }}>
+        {(['creatures', 'skills', 'support', 'talents'] as const).map(t => (
           <button key={t}
             className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '8px 20px', fontSize: '0.8rem' }}
             onClick={() => setTab(t)}
           >
-            {t === 'creatures' ? '🐾 Creatures' : t === 'support' ? '🃏 Support' : '✨ Talents'}
+            {t === 'creatures' ? '🐾 Creatures' : t === 'skills' ? '⚔️ Skills' : t === 'support' ? '🃏 Support' : '✨ Talents'}
           </button>
         ))}
       </div>
 
+      {tab === 'skills' && (
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 16px' }}>
+          {/* Type Filter */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+            {['all', 'Fire', 'Water', 'Air', 'Earth', 'Shadow', 'Divine'].map(t => (
+              <button key={t}
+                className={`btn ${filterType === t ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '4px 12px', fontSize: '0.7rem', borderRadius: 'var(--radius-full)' }}
+                onClick={() => setFilterType(t)}
+              >
+                {t === 'all' ? 'All' : t}
+              </button>
+            ))}
+          </div>
+
+          <div className="collection-grid">
+            {filteredSkills.map((s: any) => {
+              const unlocked = unlockedSkills.includes(s.id);
+              return (
+                <div key={s.id}
+                  className={`creature-card ${!unlocked ? 'locked' : ''}`}
+                  style={{ height: 'auto', minHeight: 140 }}
+                >
+                  <div className="creature-card-emoji">{s.icon}</div>
+                  <div className="creature-card-name">{s.name}</div>
+                  <div style={{ marginBottom: 8 }}>
+                    <span className={`rarity-badge rarity-${s.rarity.toLowerCase()}`}>{s.rarity}</span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 8, textAlign: 'center' }}>
+                    {s.description}
+                  </div>
+                  <div style={{ marginTop: 'auto' }}>
+                    <span className={`type-badge type-${s.type.toLowerCase()}`}>{s.type}</span>
+                  </div>
+                  {!unlocked && (
+                    <div style={{ position: 'absolute', top: 8, right: 8, fontSize: '1rem' }}>🔒</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {tab === 'creatures' && (
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 16px' }}>
           {/* Type Filter */}
@@ -101,22 +152,29 @@ export default function Collection() {
       {tab === 'support' && (
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {supportCards.map((card: any) => (
-              <div key={card.id} style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)', padding: '16px 20px',
-                display: 'flex', gap: 16, alignItems: 'center',
-              }}>
-                <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>{card.icon}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
-                    {card.name}
+            {supportCards.map((card: any) => {
+              const unlocked = unlockedSupport.includes(card.id);
+              return (
+                <div key={card.id} style={{
+                  background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)', padding: '16px 20px',
+                  display: 'flex', gap: 16, alignItems: 'center',
+                  opacity: unlocked ? 1 : 0.6,
+                  filter: unlocked ? 'none' : 'grayscale(1)',
+                  position: 'relative'
+                }}>
+                  <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>{card.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+                      {card.name}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8 }}>{card.description}</div>
+                    <span className={`rarity-badge rarity-${card.rarity.toLowerCase()}`}>{card.rarity}</span>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8 }}>{card.description}</div>
-                  <span className={`rarity-badge rarity-${card.rarity.toLowerCase()}`}>{card.rarity}</span>
+                  {!unlocked && <div style={{ position: 'absolute', top: 12, right: 16, fontSize: '1.2rem' }}>🔒</div>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -124,22 +182,29 @@ export default function Collection() {
       {tab === 'talents' && (
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {talents.map((t: any) => (
-              <div key={t.id} style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)', padding: '14px 20px',
-                display: 'flex', gap: 14, alignItems: 'center',
-              }}>
-                <div style={{ fontSize: '2rem', flexShrink: 0 }}>{t.icon}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
-                    {t.name}
+            {talents.map((t: any) => {
+              const unlocked = unlockedTalents.includes(t.id);
+              return (
+                <div key={t.id} style={{
+                  background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)', padding: '14px 20px',
+                  display: 'flex', gap: 14, alignItems: 'center',
+                  opacity: unlocked ? 1 : 0.6,
+                  filter: unlocked ? 'none' : 'grayscale(1)',
+                  position: 'relative'
+                }}>
+                  <div style={{ fontSize: '2rem', flexShrink: 0 }}>{t.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
+                      {t.name}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 6 }}>{t.description}</div>
+                    <span className={`rarity-badge rarity-${t.rarity.toLowerCase()}`}>{t.rarity}</span>
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 6 }}>{t.description}</div>
-                  <span className={`rarity-badge rarity-${t.rarity.toLowerCase()}`}>{t.rarity}</span>
+                  {!unlocked && <div style={{ position: 'absolute', top: 12, right: 16, fontSize: '1.2rem' }}>🔒</div>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

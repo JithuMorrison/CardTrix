@@ -1,7 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocketContext } from '../context/SocketContext';
-import type { DeckConfig } from '../../shared/types';
+import type { DeckConfig, PlayerProfile } from '../../shared/types';
+
+const ROAD_REWARDS = [
+  { xpGoal: 500,  type: 'essence',  id: 'essence',     name: '250 ✨', count: 250, icon: '✨' },
+  { xpGoal: 1200, type: 'creature', id: 'chimera',     name: 'Chimera', icon: '🦁' },
+  { xpGoal: 2000, type: 'skill',    id: 'earth_shield', name: 'Earth Shield', icon: '🛡️' },
+  { xpGoal: 3500, type: 'essence',  id: 'essence',     name: '1000 ✨', count: 1000, icon: '✨' },
+  { xpGoal: 5000, type: 'creature', id: 'spectral_tiger', name: 'Spectral Tiger', icon: '🐯' },
+];
 
 function Particles() {
   const particles = useMemo(() => Array.from({ length: 35 }, (_, i) => ({
@@ -50,6 +58,7 @@ export default function HomePage() {
 
   const [showNameInput, setShowNameInput] = useState(false);
   const [nameInput, setNameInput] = useState(playerName);
+  const [unlockModal, setUnlockModal] = useState<{ rewards: any[] } | null>(null);
 
   // Helper to load or build deck
   const getActiveDeck = useCallback((): DeckConfig | null => {
@@ -94,6 +103,22 @@ export default function HomePage() {
       setShowNameInput(false);
     }
   };
+
+  useEffect(() => {
+    const { socket } = useSocketContext.getState?.() || {}; // This is a hack, usually we'd use useSocketContext's socket
+    // Instead, I'll use a better approach: the SocketContext should already handle this if I add an effect there or here.
+  }, []);
+
+  // Correct way to listen for road_unlock:
+  const { socket } = useSocketContext();
+  useEffect(() => {
+    if (!socket) return;
+    const handleUnlock = (data: { rewards: any[] }) => {
+      setUnlockModal(data);
+    };
+    socket.on('road_unlock', handleUnlock);
+    return () => { socket.off('road_unlock', handleUnlock); };
+  }, [socket]);
 
   const isSearching = inQueue && !matchFound;
 
@@ -160,6 +185,14 @@ export default function HomePage() {
             >
               🤖 VS Bot
             </button>
+            <button
+              className="btn btn-gold"
+              style={{ flex: 1, padding: '14px', borderRadius: '12px', letterSpacing: '0.1em', animation: 'pulse-gold 2s infinite' }}
+              onClick={() => navigate('/store')}
+              disabled={!connected || !gameData || isSearching}
+            >
+              ✨ ANCIENT VAULT
+            </button>
           </div>
           <p style={{ marginTop: 16, fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
             Or configure your deck first →
@@ -223,6 +256,71 @@ export default function HomePage() {
           <div className="profile-rating">{profile?.rating || 1000}</div>
         </div>
       </section>
+
+      {/* Primal Road (Trophy Road) */}
+      <section className="home-section">
+        <h2 className="section-title">
+          <span className="section-title-icon">🛣️</span>
+          Primal Road
+          <span style={{ fontSize: '0.7rem', opacity: 0.6, marginLeft: 10, fontWeight: 400 }}>EARN XP TO UNLOCK EXCLUSIVE POWER</span>
+        </h2>
+        
+        <div className="primal-road-container">
+          <div className="primal-road-track-bg" />
+          <div className="primal-road-track-progress" 
+            style={{ width: `${Math.min(100, (profile?.experience || 0) / 5000 * 100)}%` }} 
+          />
+          
+          <div className="primal-road-items">
+            {ROAD_REWARDS.map((reward, i) => {
+              const hasXP = (profile?.experience || 0) >= reward.xpGoal;
+              // Check if actually owned for non-essence rewards
+              let isOwned = hasXP;
+              if (reward.type === 'creature') isOwned = profile?.unlockedCreatures.includes(reward.id) ?? false;
+              if (reward.type === 'skill') isOwned = profile?.unlockedSkills.includes(reward.id) ?? false;
+              if (reward.type === 'talent') isOwned = profile?.unlockedTalents.includes(reward.id) ?? false;
+
+              return (
+                <div key={i} className={`road-item ${hasXP ? 'unlocked' : 'locked'}`}
+                  style={{ left: `${(reward.xpGoal / 5000) * 100}%` }}>
+                  <div className="road-item-icon">{reward.icon}</div>
+                  <div className="road-item-tooltip">
+                    <div className="tooltip-name">{reward.name}</div>
+                    <div className="tooltip-xp">{reward.xpGoal} XP</div>
+                  </div>
+                  {isOwned && <div className="road-item-check">✓</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+          <span>START</span>
+          <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{profile?.experience || 0} / 5000 XP TOTAL</span>
+          <span>LEGENDARY REWARD</span>
+        </div>
+      </section>
+
+      {/* Unlock Modal */}
+      {unlockModal && (
+        <div className="unlock-overlay" onClick={() => setUnlockModal(null)}>
+          <div className="unlock-card" onClick={e => e.stopPropagation()}>
+            <div className="unlock-header">NEW UNLOCK!</div>
+            <div className="unlock-grid">
+              {unlockModal.rewards.map((r, i) => (
+                <div key={i} className="unlock-item">
+                  <div className="unlock-icon">{r.icon || '✨'}</div>
+                  <div className="unlock-name">{r.name}</div>
+                  <div className="unlock-type">{r.type.toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+            <p className="unlock-desc">Continue your journey on the Primal Road to unlock more exclusive content.</p>
+            <button className="btn btn-primary" onClick={() => setUnlockModal(null)}>AWESOME!</button>
+          </div>
+        </div>
+      )}
 
       {/* How to Play */}
       <section className="home-section">

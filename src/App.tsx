@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import DeckBuilder from './pages/DeckBuilder';
 import BattleArena from './pages/BattleArena';
 import Collection from './pages/Collection';
+import Store from './pages/Store';
 import { NavLink } from 'react-router-dom';
 import './index.css';
 
@@ -23,6 +24,10 @@ function NavBar() {
           <span className="nav-item-icon">📚</span>
           Collection
         </NavLink>
+        <NavLink to="/store" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <span className="nav-item-icon">✨</span>
+          Vault
+        </NavLink>
       </div>
     </nav>
   );
@@ -41,6 +46,7 @@ function AppContent() {
           <Route path="/deck" element={<DeckBuilder />} />
           <Route path="/battle" element={<BattleArena />} />
           <Route path="/collection" element={<Collection />} />
+          <Route path="/store" element={<Store />} />
         </Routes>
       </main>
       {!inBattle && !isBattlePage && <NavBar />}
