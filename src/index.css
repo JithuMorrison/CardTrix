@@ -1827,11 +1827,11 @@ input[type='range']::-webkit-slider-thumb {
 .creature-sprite-lg { width:160px; height:160px; object-fit:contain; filter:drop-shadow(0 6px 20px rgba(0,0,0,0.6)); animation:sprite-idle 2.5s ease-in-out infinite; }
 
 @keyframes sprite-idle { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.02)} }
-.creature-sprite.attacking { animation:sprite-attack 0.5s ease forwards!important; }
-@keyframes sprite-attack { 0%{transform:translateX(0) scale(1)} 30%{transform:translateX(30px) scale(1.15);filter:brightness(1.5) drop-shadow(0 0 20px rgba(255,200,0,0.8))} 60%{transform:translateX(-5px) scale(0.95)} 100%{transform:translateX(0) scale(1)} }
-.creature-sprite.hit { animation:sprite-hit 0.4s ease!important; }
-@keyframes sprite-hit { 0%,100%{transform:translateX(0);filter:brightness(1)} 25%{transform:translateX(-15px);filter:brightness(2) saturate(0)} 75%{transform:translateX(8px);filter:brightness(0.6)} }
-.creature-sprite.dying { animation:sprite-die 0.7s ease forwards!important; }
+.creature-sprite.attacking, .creature-sprite-lg.attacking { animation:sprite-attack 0.5s ease forwards!important; }
+@keyframes sprite-attack { 0%{transform:translateX(0) scale(1)} 30%{transform:translateX(100px) scale(1.15);filter:brightness(1.5) drop-shadow(0 0 20px rgba(255,200,0,0.8))} 60%{transform:translateX(-10px) scale(0.95)} 100%{transform:translateX(0) scale(1)} }
+.creature-sprite.hit, .creature-sprite-lg.hit { animation:sprite-hit 0.4s ease!important; }
+@keyframes sprite-hit { 0%,100%{transform:translateX(0);filter:brightness(1)} 25%{transform:translateX(-25px);filter:brightness(2) saturate(0)} 75%{transform:translateX(10px);filter:brightness(0.6)} }
+.creature-sprite.dying, .creature-sprite-lg.dying { animation:sprite-die 0.7s ease forwards!important; }
 @keyframes sprite-die { 0%{transform:scale(1) rotate(0);opacity:1} 40%{transform:scale(1.2) rotate(5deg);filter:brightness(3) saturate(0)} 100%{transform:scale(0.3) rotate(-20deg) translateY(40px);opacity:0} }
 
 .card-holo { position:relative; overflow:hidden; }
