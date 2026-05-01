@@ -104,10 +104,7 @@ export default function HomePage() {
     }
   };
 
-  useEffect(() => {
-    const { socket } = useSocketContext.getState?.() || {}; // This is a hack, usually we'd use useSocketContext's socket
-    // Instead, I'll use a better approach: the SocketContext should already handle this if I add an effect there or here.
-  }, []);
+
 
   // Correct way to listen for road_unlock:
   const { socket } = useSocketContext();

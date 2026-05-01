@@ -220,7 +220,7 @@ export default function DeckBuilder() {
                 onClick={() => assignCreature(c.id)}
                 title={c.description}
               >
-                <div className="deck-creature-thumb">{c.emoji}</div>
+                <div className="deck-creature-thumb">{c.image && !c.image.includes('/assets/') ? <img src={c.image} alt={c.name} style={{width:32,height:32,objectFit:'contain'}} /> : c.emoji}</div>
                 <div className="deck-creature-info">
                   <div className="deck-creature-info-name">{c.name}</div>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
@@ -273,7 +273,7 @@ export default function DeckBuilder() {
 
                 {creature ? (
                   <>
-                    <div className="spawn-slot-emoji">{creature.emoji}</div>
+                    <div className="spawn-slot-emoji">{creature.image && !creature.image.includes('/assets/') ? <img src={creature.image} alt={creature.name} style={{width:64,height:64,objectFit:'contain'}} /> : creature.emoji}</div>
                     <div className="spawn-slot-name">{creature.name}</div>
                     <span className={`rarity-badge rarity-${creature.rarity.toLowerCase()}`}>{creature.rarity}</span>
 

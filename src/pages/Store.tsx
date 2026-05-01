@@ -102,10 +102,18 @@ export default function Store() {
 
       {reward && (
         <div className="modal-backdrop" style={{ zIndex: 1000 }} onClick={() => setReward(null)}>
-          <div className="modal-card" style={{ textAlign: 'center', maxWidth: 400, animation: 'result-fade-in 0.5s ease' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.2em', marginBottom: 10 }}>NEW UNLOCK</div>
-            <div style={{ fontSize: '6rem', margin: '20px 0' }}>{reward.icon}</div>
-            <h2 style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', marginBottom: 10 }}>{reward.name}</h2>
+          <div className="modal-card" style={{ textAlign: 'center', maxWidth: 400, animation: 'result-fade-in 0.5s ease', position: 'relative', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: `radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 60%)`, animation: 'spin-slow 10s linear infinite', zIndex: -1, pointerEvents: 'none' }} />
+            
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.2em', marginBottom: 10, fontFamily: 'var(--font-stat)', fontWeight: 700 }}>NEW UNLOCK</div>
+            <div style={{ margin: '30px 0', display: 'flex', justifyContent: 'center' }}>
+              {(reward.image && !reward.image.includes('/assets/')) ? (
+                <img src={reward.image} alt={reward.name} className="creature-sprite-lg" style={{ animation: 'spawn-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
+              ) : (
+                <div style={{ fontSize: '6rem', animation: 'spawn-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>{reward.icon || reward.emoji}</div>
+              )}
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--text-primary)', marginBottom: 10 }}>{reward.name}</h2>
             <div className={`rarity-badge rarity-${(reward.rarity || 'common').toLowerCase()}`} style={{ fontSize: '0.8rem', padding: '4px 12px' }}>
               {reward.rarity}
             </div>

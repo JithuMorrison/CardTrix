@@ -139,6 +139,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       // Keep inBattle true so result screen shows
     });
 
+    socket.on('game_data_updated', (data: GameData) => {
+      console.log('[Socket] Game data updated by admin');
+      setGameData(data);
+    });
+
     socket.on('error', (data: { message: string }) => {
       console.error('[Socket Error]', data.message);
     });
