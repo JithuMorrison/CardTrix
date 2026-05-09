@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocketContext } from '../context/SocketContext';
-import type { DeckConfig, PlayerProfile } from '../../shared/types';
+import type { DeckConfig } from '../../shared/types';
 
 const ROAD_REWARDS = [
   { xpGoal: 500,  type: 'essence',  id: 'essence',     name: '250 ✨', count: 250, icon: '✨' },
@@ -18,21 +18,20 @@ function Particles() {
     delay: Math.random() * 20,
     duration: 10 + Math.random() * 15,
     size: 2 + Math.random() * 5,
-    color: ['particle-green', 'particle-gold', 'particle-red'][Math.floor(Math.random() * 3)],
+    color: ['#B44DFF', '#FFD700', '#FF3B5C', '#87FF3C', '#00D4FF'][Math.floor(Math.random() * 5)],
   })), []);
 
   return (
     <div className="hero-particles">
       {particles.map(p => (
-        <div key={p.id} className={`particle ${p.color}`}
-          style={{ left: `${p.left}%`, width: `${p.size}px`, height: `${p.size}px`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s` }}
+        <div key={p.id} className="particle"
+          style={{ left: `${p.left}%`, width: `${p.size}px`, height: `${p.size}px`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s`, background: `radial-gradient(circle, ${p.color}, transparent)`, opacity: 0.6 }}
         />
       ))}
     </div>
   );
 }
 
-/** Build a default 6-creature deck with default weights */
 function buildDefaultDeck(gameData: any): DeckConfig | null {
   if (!gameData || !gameData.creatures || gameData.creatures.length < 6) return null;
   return {
@@ -60,7 +59,6 @@ export default function HomePage() {
   const [nameInput, setNameInput] = useState(playerName);
   const [unlockModal, setUnlockModal] = useState<{ rewards: any[] } | null>(null);
 
-  // Helper to load or build deck
   const getActiveDeck = useCallback((): DeckConfig | null => {
     const saved = localStorage.getItem('primalduels_saved_deck');
     if (saved) {
@@ -104,9 +102,6 @@ export default function HomePage() {
     }
   };
 
-
-
-  // Correct way to listen for road_unlock:
   const { socket } = useSocketContext();
   useEffect(() => {
     if (!socket) return;
@@ -157,12 +152,50 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Currency Bar */}
+      <div className="currency-bar" style={{ justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #B44DFF, #6B1FAA)',
+            border: '2px solid var(--gold)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-heading)', fontSize: '0.9rem', color: '#fff', cursor: 'pointer',
+          }} onClick={() => setShowNameInput(true)}>
+            {playerName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.85rem', color: '#fff', lineHeight: 1 }}>{playerName}</div>
+            <div style={{ fontFamily: 'var(--font-stat)', fontSize: '0.5rem', color: 'var(--gold)' }}>LVL {profile?.level || 1}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div className="currency-pill"><span className="currency-icon">🏆</span><span className="currency-value">{profile?.rating || 1000}</span></div>
+          <div className="currency-pill"><span className="currency-icon">🪙</span><span className="currency-value">{profile?.coins || 0}</span></div>
+          <div className="currency-pill"><span className="currency-icon">✨</span><span className="currency-value">{profile?.essence || 0}</span></div>
+        </div>
+      </div>
+
+      {/* Name Input Modal */}
+      {showNameInput && (
+        <div className="modal-backdrop" style={{ zIndex: 100 }} onClick={() => setShowNameInput(false)}>
+          <div className="modal-card" style={{ maxWidth: 350, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', color: 'var(--gold)', marginBottom: 16 }}>CHANGE NAME</h2>
+            <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleNameSave()}
+              className="admin-input" autoFocus style={{ textAlign: 'center', fontSize: '1.1rem' }}
+            />
+            <button className="btn btn-gold" onClick={handleNameSave} style={{ width: '100%', marginTop: 12 }}>SAVE</button>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <section className="hero">
         <div className="hero-bg" />
         <Particles />
         <div className="hero-content">
-          <div className="hero-badge">🐾 STRATEGY ARENA</div>
+          <div className="hero-badge" style={{ borderColor: 'rgba(180,77,255,0.5)', background: 'rgba(180,77,255,0.1)', color: '#B44DFF' }}>⚔️ STRATEGY ARENA</div>
           <h1 className="hero-title">PRIMAL<br/>DUELS</h1>
           <p className="hero-subtitle">STRATEGY ARENA</p>
           <p className="hero-tagline">"Strategy wins. Not luck."</p>
@@ -173,93 +206,73 @@ export default function HomePage() {
               onClick={handleQuickPlay}
               disabled={!connected || !gameData || isSearching}
             >
-              {!connected ? '⏳ Connecting...' : isSearching ? '🔍 Searching...' : '⚔️ Quick PvP'}
+              {!connected ? '⏳ Connecting...' : isSearching ? '🔍 Searching...' : '⚔️ QUICK PVP'}
             </button>
             <button
               className="play-btn-bot"
               onClick={handleVsBot}
               disabled={!connected || !gameData || isSearching}
             >
-              🤖 VS Bot
-            </button>
-            <button
-              className="btn btn-gold"
-              style={{ flex: 1, padding: '14px', borderRadius: '12px', letterSpacing: '0.1em', animation: 'pulse-gold 2s infinite' }}
-              onClick={() => navigate('/store')}
-              disabled={!connected || !gameData || isSearching}
-            >
-              ✨ ANCIENT VAULT
+              🤖 VS BOT
             </button>
           </div>
-          <p style={{ marginTop: 16, fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
-            Or configure your deck first →
-            <button
-              onClick={() => navigate('/deck')}
-              style={{ background: 'none', border: 'none', color: 'var(--green-glow)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.75rem', marginLeft: 4, textDecoration: 'underline' }}
-            >
-              Open Strategy Builder
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={() => navigate('/deck')} style={{ flex: 1, maxWidth: 200 }}>
+              ⚙️ STRATEGY
             </button>
-          </p>
+            <button className="btn btn-gold" onClick={() => navigate('/store')} style={{ flex: 1, maxWidth: 200, animation: 'pulse-gold 2s infinite' }}>
+              ✨ VAULT
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* Profile Card */}
+      {/* Stats Bar */}
       <section className="home-section">
-        <div className="profile-card">
-          <div className="profile-avatar" onClick={() => setShowNameInput(true)}>
-            {playerName.charAt(0).toUpperCase()}
-          </div>
-          <div className="profile-info">
-            {showNameInput ? (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleNameSave()}
-                  style={{
-                    background: 'var(--bg-deep)', border: '1px solid var(--border-accent)',
-                    borderRadius: 'var(--radius-sm)', padding: '6px 12px',
-                    color: 'var(--text-primary)', fontFamily: 'var(--font-heading)',
-                    fontSize: '1rem', outline: 'none', width: 150,
-                  }} autoFocus
-                />
-                <button className="btn btn-primary" onClick={handleNameSave} style={{ padding: '6px 16px', fontSize: '0.8rem' }}>Save</button>
-              </div>
-            ) : (
-              <div className="profile-name">{playerName}</div>
-            )}
-            <div className="profile-stats">
-              <div className="profile-stat">
-                <span className="profile-stat-label">WINS</span>
-                <span className="profile-stat-value" style={{ color: 'var(--green-glow)' }}>{profile?.totalWins || 0}</span>
-              </div>
-              <div className="profile-stat">
-                <span className="profile-stat-label">LOSSES</span>
-                <span className="profile-stat-value" style={{ color: 'var(--red-combat)' }}>{profile?.totalLosses || 0}</span>
-              </div>
-              <div className="profile-stat">
-                <span className="profile-stat-label">LVL</span>
-                <span className="profile-stat-value">{profile?.level || 1}</span>
-              </div>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12,
+          background: 'var(--bg-card)', border: '2px solid var(--border-subtle)', borderRadius: 18, padding: '16px 20px',
+        }}>
+          {[
+            { label: 'WINS', value: profile?.totalWins || 0, color: 'var(--green-glow)' },
+            { label: 'LOSSES', value: profile?.totalLosses || 0, color: 'var(--red-combat)' },
+            { label: 'RATING', value: profile?.rating || 1000, color: 'var(--gold)' },
+            { label: 'LEVEL', value: profile?.level || 1, color: 'var(--blue-water)' },
+          ].map((s, i) => (
+            <div key={i} style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-stat)', fontSize: '0.5rem', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{s.label}</div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', color: s.color }}>{s.value}</div>
             </div>
-            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8,
-              background: 'rgba(200, 150, 10, 0.1)', border: '1px solid rgba(200, 150, 10, 0.2)',
-              borderRadius: 'var(--radius-sm)', padding: '4px 12px', width: 'fit-content' }}>
-              <span style={{ fontSize: '1rem' }}>✨</span>
-              <span style={{ fontFamily: 'var(--font-stat)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--gold)' }}>
-                {profile?.essence || 0} <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>ESSENCE</span>
-              </span>
-            </div>
-          </div>
-          <div className="profile-rating">{profile?.rating || 1000}</div>
+          ))}
         </div>
       </section>
 
-      {/* Primal Road (Trophy Road) */}
+      {/* Power-Ups Quick View */}
+      {profile?.powerUps && profile.powerUps.length > 0 && (
+        <section className="home-section" style={{ paddingTop: 0 }}>
+          <h2 className="section-title"><span className="section-title-icon">⚡</span>Power-Ups</h2>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {profile.powerUps.map((pu, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'var(--bg-card)', border: '2px solid rgba(135,255,60,0.2)', borderRadius: 14, padding: '8px 14px',
+              }}>
+                <span style={{ fontSize: '1.3rem' }}>{pu.icon}</span>
+                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '0.8rem', color: '#fff' }}>{pu.name}</span>
+                <span style={{ fontFamily: 'var(--font-stat)', fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 700 }}>x{pu.quantity}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Primal Road */}
       <section className="home-section">
         <h2 className="section-title">
           <span className="section-title-icon">🛣️</span>
           Primal Road
-          <span style={{ fontSize: '0.7rem', opacity: 0.6, marginLeft: 10, fontWeight: 400 }}>EARN XP TO UNLOCK EXCLUSIVE POWER</span>
+          <span style={{ fontSize: '0.65rem', opacity: 0.6, marginLeft: 10, fontWeight: 400, fontFamily: 'var(--font-body)' }}>EARN XP TO UNLOCK</span>
         </h2>
         
         <div className="primal-road-container">
@@ -271,11 +284,9 @@ export default function HomePage() {
           <div className="primal-road-items">
             {ROAD_REWARDS.map((reward, i) => {
               const hasXP = (profile?.experience || 0) >= reward.xpGoal;
-              // Check if actually owned for non-essence rewards
               let isOwned = hasXP;
               if (reward.type === 'creature') isOwned = profile?.unlockedCreatures.includes(reward.id) ?? false;
               if (reward.type === 'skill') isOwned = profile?.unlockedSkills.includes(reward.id) ?? false;
-              if (reward.type === 'talent') isOwned = profile?.unlockedTalents.includes(reward.id) ?? false;
 
               return (
                 <div key={i} className={`road-item ${hasXP ? 'unlocked' : 'locked'}`}
@@ -294,8 +305,8 @@ export default function HomePage() {
         
         <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
           <span>START</span>
-          <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{profile?.experience || 0} / 5000 XP TOTAL</span>
-          <span>LEGENDARY REWARD</span>
+          <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{profile?.experience || 0} / 5000 XP</span>
+          <span>LEGENDARY</span>
         </div>
       </section>
 
@@ -314,7 +325,7 @@ export default function HomePage() {
               ))}
             </div>
             <p className="unlock-desc">Continue your journey on the Primal Road to unlock more exclusive content.</p>
-            <button className="btn btn-primary" onClick={() => setUnlockModal(null)}>AWESOME!</button>
+            <button className="btn btn-gold" onClick={() => setUnlockModal(null)}>AWESOME!</button>
           </div>
         </div>
       )}
@@ -328,17 +339,17 @@ export default function HomePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
           {[
             { icon: '🐾', title: 'Pick 6 Creatures', desc: 'Choose your lineup. Order determines spawn sequence.' },
-            { icon: '⚙️', title: 'Configure Strategy', desc: 'Set skill frequency weights, assign up to 2 talents per creature, attach support cards.' },
-            { icon: '⚔️', title: 'Auto-Battle', desc: 'Combat runs automatically every 2 seconds. Your pre-set strategy fights for you.' },
+            { icon: '⚙️', title: 'Configure Strategy', desc: 'Set skill frequency, assign talents, attach support cards.' },
+            { icon: '⚔️', title: 'Auto-Battle', desc: 'Combat runs every 2 seconds. Your strategy fights for you.' },
             { icon: '🏆', title: 'Last Standing Wins', desc: 'Defeat all 6 opponent creatures. A true test of planning.' },
           ].map((item, i) => (
             <div key={i} style={{
-              background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
-              padding: '16px', display: 'flex', flexDirection: 'column', gap: 8,
+              background: 'var(--bg-card)', border: '2px solid var(--border-subtle)', borderRadius: 18,
+              padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              <div style={{ fontSize: '2rem' }}>{item.icon}</div>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{item.title}</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
+              <div style={{ fontSize: '2.2rem' }}>{item.icon}</div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.95rem', color: '#fff' }}>{item.title}</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
             </div>
           ))}
         </div>

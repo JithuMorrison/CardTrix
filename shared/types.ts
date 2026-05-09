@@ -21,6 +21,7 @@ export interface CreatureDef {
   backgroundType: BackgroundType;
   baseHp: number;
   baseAttack: number;
+  baseDefense: number;     // damage reduction stat
   baseSpeed: number;       // lower = faster (ticks between turns)
   skillIds: [string, string, string]; // exactly 3 skills
   description: string;
@@ -88,7 +89,7 @@ export interface SupportCardDef {
 }
 
 export interface SupportEffect {
-  type: 'attack_boost' | 'speed_boost' | 'hp_boost' | 'poison_on_hit' | 'lifesteal'
+  type: 'attack_boost' | 'speed_boost' | 'hp_boost' | 'defense_boost' | 'poison_on_hit' | 'lifesteal'
        | 'damage_reflect' | 'cooldown_reduce' | 'weight_shift';
   value: number;
   skillIndex?: number; // for weight_shift: which skill (0,1,2)
@@ -109,6 +110,7 @@ export interface BattleCreature {
   hp: number;
   maxHp: number;
   attack: number;
+  defense: number;         // damage reduction stat
   speed: number;           // ticks between turns
 
   // Skills + config
@@ -250,4 +252,9 @@ export interface PlayerProfile {
   totalLosses: number;
   experience: number;
   level: number;
+  coins: number;
+  powerPoints: number;                        // currency for upgrading creatures
+  creatureLevels: Record<string, number>;     // creature defId -> level (1-11)
+  dailyMatchesPlayed: number;                 // reset daily, max 5 give rewards
+  lastMatchDate: string;                      // ISO date string for daily reset
 }
