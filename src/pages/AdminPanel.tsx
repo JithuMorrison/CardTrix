@@ -17,7 +17,7 @@ export default function AdminPanel() {
   const [msg, setMsg] = useState('');
 
   // Creature form
-  const [cForm, setCForm] = useState({ id:'', name:'', type:'Earth', backgroundType:'Jungle', baseHp:700, baseAttack:300, baseSpeed:18, skillIds:'', description:'', emoji:'🐾', rarity:'Common', image:'' });
+  const [cForm, setCForm] = useState({ id:'', name:'', type:'Earth', backgroundType:'Jungle', baseHp:700, baseAttack:300, baseDefense:50, baseSpeed:18, skillIds:'', description:'', emoji:'🐾', rarity:'Common', image:'' });
   // Skill form
   const [sForm, setSForm] = useState({ id:'', name:'', type:'Earth', effect:'damage', power:100, cooldown:2, defaultWeight:50, description:'', icon:'⚔️', rarity:'Common', duration:0, buffType:'', buffValue:0 });
   // Talent form
@@ -35,8 +35,8 @@ export default function AdminPanel() {
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
 
   const createCreature = () => {
-    const creature = { ...cForm, baseHp: Number(cForm.baseHp), baseAttack: Number(cForm.baseAttack), baseSpeed: Number(cForm.baseSpeed), skillIds: cForm.skillIds.split(',').map(s=>s.trim()).slice(0,3) as [string,string,string], image: cForm.image || `/sprites/${cForm.id}.png` };
-    socket?.emit('admin_create_creature', { password, creature }, (r: any) => { r.success ? flash('Creature created!') : flash(r.message); });
+    const creature = { ...cForm, baseHp: Number(cForm.baseHp), baseAttack: Number(cForm.baseAttack), baseDefense: Number(cForm.baseDefense), baseSpeed: Number(cForm.baseSpeed), skillIds: cForm.skillIds.split(',').map(s=>s.trim()).slice(0,3) as [string,string,string], image: cForm.image || `/sprites/${cForm.id}.png` };
+    socket?.emit('admin_create_creature', { password, creature }, (r: any) => { r.success ? flash('Creature saved!') : flash(r.message); });
   };
 
   const createSkill = () => {
@@ -55,7 +55,24 @@ export default function AdminPanel() {
     let effects = [];
     try { effects = JSON.parse(scForm.effectsJson); } catch { flash('Invalid effects JSON'); return; }
     const card = { ...scForm, effects };
-    socket?.emit('admin_create_support', { password, card }, (r: any) => { r.success ? flash('Support card created!') : flash(r.message); });
+    socket?.emit('admin_create_support', { password, card }, (r: any) => { r.success ? flash('Support card saved!') : flash(r.message); });
+  };
+
+  const handleEditCreature = (c: any) => {
+    setCForm({ ...c, skillIds: c.skillIds.join(',') });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handleEditSkill = (s: any) => {
+    setSForm({ ...s, duration: s.duration || 0, buffType: s.buffType || '', buffValue: s.buffValue || 0 });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handleEditTalent = (t: any) => {
+    setTForm({ id: t.id, name: t.name, description: t.description, effectType: t.effect.type, stat: t.effect.stat || '', value: t.effect.value, icon: t.icon, rarity: t.rarity });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handleEditSupport = (sc: any) => {
+    setScForm({ ...sc, effectsJson: JSON.stringify(sc.effects, null, 2) });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = (type: string, id: string) => {
@@ -113,9 +130,10 @@ export default function AdminPanel() {
                 <div><label style={labelStyle}>TYPE</label><select className={inputStyle} value={cForm.type} onChange={e=>setCForm({...cForm,type:e.target.value})}>{TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
                 <div><label style={labelStyle}>BACKGROUND</label><select className={inputStyle} value={cForm.backgroundType} onChange={e=>setCForm({...cForm,backgroundType:e.target.value})}>{BG_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:8 }}>
                 <div><label style={labelStyle}>HP</label><input className={inputStyle} type="number" value={cForm.baseHp} onChange={e=>setCForm({...cForm,baseHp:+e.target.value})} /></div>
                 <div><label style={labelStyle}>ATK</label><input className={inputStyle} type="number" value={cForm.baseAttack} onChange={e=>setCForm({...cForm,baseAttack:+e.target.value})} /></div>
+                <div><label style={labelStyle}>DEF</label><input className={inputStyle} type="number" value={cForm.baseDefense} onChange={e=>setCForm({...cForm,baseDefense:+e.target.value})} /></div>
                 <div><label style={labelStyle}>SPD</label><input className={inputStyle} type="number" value={cForm.baseSpeed} onChange={e=>setCForm({...cForm,baseSpeed:+e.target.value})} /></div>
               </div>
               <label style={labelStyle}>SKILL IDS (comma-sep)</label><input className={inputStyle} value={cForm.skillIds} onChange={e=>setCForm({...cForm,skillIds:e.target.value})} placeholder="skill1,skill2,skill3" />
@@ -205,7 +223,8 @@ export default function AdminPanel() {
                   <div className="admin-data-name">{c.name}</div>
                   <div style={{ display:'flex', gap:4 }}><span className={`type-badge type-${c.type.toLowerCase()}`}>{c.type}</span><span className={`rarity-badge rarity-${c.rarity.toLowerCase()}`}>{c.rarity}</span></div>
                 </div>
-                <div style={{ fontFamily:'var(--font-stat)', fontSize:'0.6rem', color:'var(--text-muted)' }}>❤️{c.baseHp} ⚔️{c.baseAttack}</div>
+                <div style={{ fontFamily:'var(--font-stat)', fontSize:'0.6rem', color:'var(--text-muted)' }}>❤️{c.baseHp} ⚔️{c.baseAttack} 🛡️{c.baseDefense}</div>
+                <button className="btn btn-secondary" style={{ padding:'2px 8px', fontSize:'0.6rem', marginRight: 4 }} onClick={()=>handleEditCreature(c)}>✏️</button>
                 <button className="btn btn-danger" style={{ padding:'2px 8px', fontSize:'0.6rem' }} onClick={()=>handleDelete('creatures',c.id)}>✕</button>
               </div>
             ))}
@@ -216,6 +235,7 @@ export default function AdminPanel() {
                   <div className="admin-data-name">{s.name}</div>
                   <div style={{ display:'flex', gap:4 }}><span className={`type-badge type-${s.type.toLowerCase()}`}>{s.type}</span><span className="skill-chip power">⚡{s.power}</span></div>
                 </div>
+                <button className="btn btn-secondary" style={{ padding:'2px 8px', fontSize:'0.6rem', marginRight: 4 }} onClick={()=>handleEditSkill(s)}>✏️</button>
                 <button className="btn btn-danger" style={{ padding:'2px 8px', fontSize:'0.6rem' }} onClick={()=>handleDelete('skills',s.id)}>✕</button>
               </div>
             ))}
@@ -223,6 +243,7 @@ export default function AdminPanel() {
               <div key={t.id} className="admin-data-row">
                 <span style={{ fontSize:'1.3rem', width:32, textAlign:'center' }}>{t.icon}</span>
                 <div style={{ flex:1 }}><div className="admin-data-name">{t.name}</div><div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{t.description}</div></div>
+                <button className="btn btn-secondary" style={{ padding:'2px 8px', fontSize:'0.6rem', marginRight: 4 }} onClick={()=>handleEditTalent(t)}>✏️</button>
                 <button className="btn btn-danger" style={{ padding:'2px 8px', fontSize:'0.6rem' }} onClick={()=>handleDelete('talents',t.id)}>✕</button>
               </div>
             ))}
@@ -230,6 +251,7 @@ export default function AdminPanel() {
               <div key={c.id} className="admin-data-row">
                 <span style={{ fontSize:'1.3rem', width:32, textAlign:'center' }}>{c.icon}</span>
                 <div style={{ flex:1 }}><div className="admin-data-name">{c.name}</div><div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{c.description}</div></div>
+                <button className="btn btn-secondary" style={{ padding:'2px 8px', fontSize:'0.6rem', marginRight: 4 }} onClick={()=>handleEditSupport(c)}>✏️</button>
                 <button className="btn btn-danger" style={{ padding:'2px 8px', fontSize:'0.6rem' }} onClick={()=>handleDelete('supportCards',c.id)}>✕</button>
               </div>
             ))}

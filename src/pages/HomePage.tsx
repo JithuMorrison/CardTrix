@@ -170,9 +170,9 @@ export default function HomePage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <div className="currency-pill"><span className="currency-icon">🏆</span><span className="currency-value">{profile?.rating || 1000}</span></div>
           <div className="currency-pill"><span className="currency-icon">🪙</span><span className="currency-value">{profile?.coins || 0}</span></div>
           <div className="currency-pill"><span className="currency-icon">✨</span><span className="currency-value">{profile?.essence || 0}</span></div>
+          <div className="currency-pill"><span className="currency-icon">⚡</span><span className="currency-value">{profile?.powerPoints || 0}</span></div>
         </div>
       </div>
 
@@ -248,24 +248,32 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Power-Ups Quick View */}
-      {profile?.powerUps && profile.powerUps.length > 0 && (
-        <section className="home-section" style={{ paddingTop: 0 }}>
-          <h2 className="section-title"><span className="section-title-icon">⚡</span>Power-Ups</h2>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {profile.powerUps.map((pu, i) => (
+      {/* Daily Match Progress */}
+      <section className="home-section" style={{ paddingTop: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'var(--bg-card)', border: '2px solid var(--border-subtle)', borderRadius: 14, padding: '12px 18px',
+        }}>
+          <div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.85rem', color: '#fff' }}>Daily Matches</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>First 5 matches give ✨ & 🪙</div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {Array.from({ length: 5 }, (_, i) => (
               <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'var(--bg-card)', border: '2px solid rgba(135,255,60,0.2)', borderRadius: 14, padding: '8px 14px',
+                width: 22, height: 22, borderRadius: '50%',
+                border: `2px solid ${i < (profile?.dailyMatchesPlayed || 0) ? 'var(--gold)' : 'var(--border-mid)'}`,
+                background: i < (profile?.dailyMatchesPlayed || 0) ? 'var(--gold)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.6rem', color: i < (profile?.dailyMatchesPlayed || 0) ? '#3a1800' : 'var(--text-muted)',
+                fontWeight: 700,
               }}>
-                <span style={{ fontSize: '1.3rem' }}>{pu.icon}</span>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '0.8rem', color: '#fff' }}>{pu.name}</span>
-                <span style={{ fontFamily: 'var(--font-stat)', fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 700 }}>x{pu.quantity}</span>
+                {i < (profile?.dailyMatchesPlayed || 0) ? '✓' : i + 1}
               </div>
             ))}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Primal Road */}
       <section className="home-section">

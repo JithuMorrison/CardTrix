@@ -76,7 +76,7 @@ export default function Collection() {
                     <div className="creature-card-emoji">{c.emoji}</div>}
                   <div className="creature-card-name">{c.name}</div>
                   <div style={{ marginBottom: 8 }}><span className={`rarity-badge rarity-${c.rarity.toLowerCase()}`}>{c.rarity}</span></div>
-                  <div className="creature-card-stats"><span>❤️ {c.baseHp}</span><span>⚔️ {c.baseAttack}</span></div>
+                  <div className="creature-card-stats"><span>❤️ {c.baseHp}</span><span>⚔️ {c.baseAttack}</span><span>🛡️ {c.baseDefense}</span></div>
                   <div style={{ marginTop: 8 }}><span className={`type-badge type-${c.type.toLowerCase()}`}>{c.type}</span></div>
                   {!unlocked && <div style={{ position: 'absolute', top: 8, right: 8, fontSize: '1rem' }}>🔒</div>}
                 </div>
@@ -170,6 +170,7 @@ export default function Collection() {
             <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginBottom: 20, fontFamily: 'var(--font-stat)', fontSize: '0.75rem' }}>
               <div style={{ textAlign: 'center' }}><div style={{ color: 'var(--text-muted)' }}>HP</div><div style={{ color: 'var(--green-glow)', fontWeight: 700, fontSize: '1.1rem' }}>{selected.baseHp}</div></div>
               <div style={{ textAlign: 'center' }}><div style={{ color: 'var(--text-muted)' }}>ATK</div><div style={{ color: 'var(--red-combat)', fontWeight: 700, fontSize: '1.1rem' }}>{selected.baseAttack}</div></div>
+              <div style={{ textAlign: 'center' }}><div style={{ color: 'var(--text-muted)' }}>DEF</div><div style={{ color: '#06B6D4', fontWeight: 700, fontSize: '1.1rem' }}>{selected.baseDefense}</div></div>
               <div style={{ textAlign: 'center' }}><div style={{ color: 'var(--text-muted)' }}>SPD</div><div style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '1.1rem' }}>{selected.baseSpeed}</div></div>
             </div>
             <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.12em', marginBottom: 10 }}>SKILLS</div>

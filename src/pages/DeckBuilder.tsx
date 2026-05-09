@@ -357,6 +357,7 @@ export default function DeckBuilder() {
               <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10, fontFamily: 'var(--font-stat)', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                 <span>❤️ {activeCreatureDef.baseHp}</span>
                 <span>⚔️ {activeCreatureDef.baseAttack}</span>
+                <span>🛡️ {activeCreatureDef.baseDefense}</span>
                 <span>⚡ {activeCreatureDef.baseSpeed}</span>
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.5, fontStyle: 'italic' }}>
