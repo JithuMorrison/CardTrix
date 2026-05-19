@@ -14,10 +14,24 @@ function SpriteOrEmoji({ item, size = 'md' }: { item: any; size?: 'sm'|'md'|'lg'
 }
 
 export default function Collection() {
-  const { gameData, profile } = useSocketContext();
+  const { gameData, profile, socket, setProfile } = useSocketContext();
   const [tab, setTab] = useState<'creatures' | 'skills' | 'support' | 'talents'>('creatures');
   const [filterType, setFilterType] = useState('all');
   const [selected, setSelected] = useState<any>(null);
+  const [upgrading, setUpgrading] = useState(false);
+
+  const handleUpgrade = () => {
+    if (!socket || !selected || !profile) return;
+    setUpgrading(true);
+    socket.emit('upgrade_creature', { playerId: profile.id, creatureId: selected.id }, (res: any) => {
+      setUpgrading(false);
+      if (res.success && res.player) {
+        setProfile(res.player);
+      } else {
+        alert(res.message || 'Failed to upgrade');
+      }
+    });
+  };
 
   const creatures = (gameData?.creatures || []).sort((a: any, b: any) => (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0));
   const skills = (gameData?.skills || []).sort((a: any, b: any) => (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0));
@@ -76,6 +90,7 @@ export default function Collection() {
                     <div className="creature-card-emoji">{c.emoji}</div>}
                   <div className="creature-card-name">{c.name}</div>
                   <div style={{ marginBottom: 8 }}><span className={`rarity-badge rarity-${c.rarity.toLowerCase()}`}>{c.rarity}</span></div>
+                  <div style={{ fontFamily: 'var(--font-heading)', color: 'var(--gold)', fontSize: '0.8rem', marginBottom: 4 }}>LVL {profile?.creatureLevels?.[c.id] || 1}</div>
                   <div className="creature-card-stats"><span>❤️ {c.baseHp}</span><span>⚔️ {c.baseAttack}</span><span>🛡️ {c.baseDefense}</span></div>
                   <div style={{ marginTop: 8 }}><span className={`type-badge type-${c.type.toLowerCase()}`}>{c.type}</span></div>
                   {!unlocked && <div style={{ position: 'absolute', top: 8, right: 8, fontSize: '1rem' }}>🔒</div>}
@@ -157,8 +172,8 @@ export default function Collection() {
       {/* Creature Detail Modal */}
       {selected && (
         <div className="modal-backdrop" onClick={() => setSelected(null)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 12 }}>
               <SpriteOrEmoji item={selected} size="lg" />
               <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6, marginTop: 8 }}>{selected.name}</h2>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
@@ -188,6 +203,32 @@ export default function Collection() {
                 </div>
               );
             })}
+
+            {unlockedCreatures.includes(selected.id) && (
+              <div style={{ marginTop: 24, padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: 12, border: '1px solid var(--border-mid)', textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', marginBottom: 8, color: 'var(--gold)', textShadow: '0 0 10px rgba(255,215,0,0.3)' }}>
+                  Level {profile?.creatureLevels?.[selected.id] || 1} {profile?.creatureLevels?.[selected.id] >= 11 ? '(MAXED)' : ''}
+                </div>
+                {(!profile?.creatureLevels?.[selected.id] || profile.creatureLevels[selected.id] < 11) && (
+                  <>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                      Upgrade Cost:{' '}
+                      <span style={{ color: '#FFD700', fontWeight: 700 }}>{(profile?.creatureLevels?.[selected.id] || 1) * 50} 🪙</span> +{' '}
+                      <span style={{ color: '#87FF3C', fontWeight: 700 }}>{(profile?.creatureLevels?.[selected.id] || 1) * 20} ⚡</span>
+                    </div>
+                    <button 
+                      className="btn btn-gold" 
+                      style={{ padding: '12px 24px', fontSize: '1rem', width: '100%' }}
+                      onClick={handleUpgrade}
+                      disabled={upgrading || (profile?.coins || 0) < (profile?.creatureLevels?.[selected.id] || 1) * 50 || (profile?.powerPoints || 0) < (profile?.creatureLevels?.[selected.id] || 1) * 20}
+                    >
+                      {upgrading ? 'UPGRADING...' : 'UPGRADE CREATURE'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             <button className="btn btn-secondary" style={{ width: '100%', marginTop: 16 }} onClick={() => setSelected(null)}>Close</button>
           </div>
         </div>
